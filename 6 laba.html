@@ -1,0 +1,24 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Имитатор планировщика процессов</title>
+<script src="lab6.js"></script>
+</head>
+<body class="body"></body>
+<div>Параметры планировщика: Кол-во квантов:
+<input id="planner_quants" style="width:40px"></input>
+<br/>
+<br/>
+<button type="button" onclick="add_process();">Добавить процесс</button>
+Имя: <input id="process_name"></input>
+Длительность: <input id="process_duration" style="width:40px"></input>
+Приоритет: <input id="process_priority" style="width:40px"></input>
+Старт: <input id="process_start" style="width:40px"></input>
+</div>
+<div id="processes"></div>
+<div><button type="button" onclick="step();">Квант</button></div>
+<div id="console"></div>
+</body>
+</html>
