@@ -1,1 +1,1273 @@
-Ен
+#include <stdio.h> 
+
+#include <conio.h> 
+
+#include <string> 
+
+#include <stdlib.h> 
+
+#include <iostream> 
+
+#include <locale.h> 
+
+#include <iomanip> 
+
+#include <windows.h> 
+
+#include <math.h> 
+
+  
+
+using namespace std; 
+
+  
+
+struct process{ 
+
+string name; 
+
+int size; 
+
+int appeal; 
+
+} P[1000]; 
+
+  
+
+void menu(){ 
+
+printf("\n"); 
+
+puts("------------------"); 
+
+puts(" МЕНЮ "); 
+
+puts("------------------"); 
+
+puts(" 1) Выделить память для процесса"); 
+
+puts(" 2) Вывести процессы (состояние памяти)"); 
+
+puts(" 3) Удалить процесс"); 
+
+puts(" 4) Обратиться к процессу"); 
+
+puts(" 5) Выход"); 
+
+puts("------------------"); 
+
+printf("Введите пункт меню: "); 
+
+} 
+
+  
+
+void new_processint(int volume, int &page, int &page_size, int &page_free, int &number, int &tick, int *numbers, string *processes, int *appeal, char* memory[]){ 
+
+  
+
+const char *name; 
+
+const char *name_buff; 
+
+const char *name_test; 
+
+string new_name; 
+
+int new_size; 
+
+int size_buff_2; 
+
+int index = 0, i, n; 
+
+int size_buff; 
+
+int tmp, tmp1, tmp_buff, tmp_buff_2 = 0; 
+
+int appeal_buff_massiv[page], appeal_buff_max; 
+
+  
+
+getchar(); 
+
+puts("Введите имя процесса: "); 
+
+fflush(stdin); 
+
+n = 0; 
+
+while(new_name == "." || n==0) 
+
+{ 
+
+getline(cin, new_name); 
+
+name_test = new_name.c_str(); 
+
+  
+
+for(i=0;i<strlen(name_test);i++) 
+
+{ 
+
+if(name_test[i] != ' ') 
+
+{ 
+
+n++; 
+
+} 
+
+} 
+
+  
+
+if(n == 0) 
+
+{ 
+
+puts(" Название не может быть пустым. Попробуйте еще раз: "); 
+
+} 
+
+else 
+
+if(new_name == ".") 
+
+{ 
+
+puts("Введен запрещенный символ (точка). Попробуйте ещё раз: "); 
+
+} 
+
+} 
+
+  
+
+puts("Введите размер процесса: "); 
+
+  
+
+new_size = 0; 
+
+while(new_size <= 0 || new_size > volume) 
+
+{ 
+
+scanf("%d", &new_size); 
+
+  
+
+if(new_size > 0 && new_size <= volume) 
+
+{ 
+
+int free_page = 0, free_page_buff = 0; 
+
+  
+
+for(i=0; i<page; i++) //свободные страницы 
+
+{ 
+
+if(numbers[i] == 0) 
+
+{ 
+
+free_page_buff += 1; 
+
+} 
+
+  
+
+  
+
+if(free_page < free_page_buff) 
+
+{ 
+
+free_page = free_page_buff; 
+
+index = i; 
+
+} 
+
+} 
+
+  
+
+tmp_buff = new_size/page_size; //нужное целое количество страниц 
+
+tmp_buff_2 = 0; 
+
+  
+
+if(new_size%page_size != 0) 
+
+{ 
+
+tmp_buff++; 
+
+tmp_buff_2++; //нужная страница дробная 
+
+} 
+
+  
+
+//printf("%d - tmp %d - free\n", tmp_buff, free_page); 
+
+if(tmp_buff <= free_page) //если размер меньше или равен свободным страницам 
+
+{ 
+
+P[number].name = new_name; 
+
+P[number].size = new_size; 
+
+P[number].appeal = 1; 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(tmp_buff >=0) 
+
+{ 
+
+if(numbers[i] == 0 && tmp_buff != 0 && tmp_buff_2 == 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = page_size; 
+
+memory[i] = (char*) malloc (page_size); 
+
+appeal[i] = 1; 
+
+tmp_buff--; 
+
+} 
+
+else 
+
+if(numbers[i] == 0 && tmp_buff != 1 && tmp_buff > 0 && tmp_buff_2 != 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = page_size; 
+
+memory[i] = (char*) malloc (page_size); 
+
+appeal[i] = 1; 
+
+tmp_buff--; 
+
+} 
+
+else 
+
+if(numbers[i] == 0 && tmp_buff == 1 && tmp_buff_2 != 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = new_size%page_size; 
+
+memory[i] = (char*) malloc (new_size%page_size); 
+
+appeal[i] = 1; 
+
+tmp_buff--; 
+
+} 
+
+} 
+
+} 
+
+  
+
+page_free = 0; 
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(numbers[i] == 0) 
+
+{ 
+
+page_free++; 
+
+} 
+
+} 
+
+printf(" Успех, был добавлен процесс: %s %d\n", P[number].name.c_str(), P[number].size); 
+
+number++; 
+
+} 
+
+else 
+
+{ 
+
+appeal_buff_max = P[0].appeal; //max количество обращения 
+
+for(i=0;i<number;i++) 
+
+{ 
+
+if(P[i].appeal > appeal_buff_max) 
+
+{ 
+
+appeal_buff_max = P[i].appeal; 
+
+} 
+
+//printf("%d = appeal_buff_max\n", appeal_buff_max); 
+
+//printf("%d - appeal P[i]\n", P[i].appeal); 
+
+} 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(numbers[i] == 0 && tmp_buff != 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = page_size; 
+
+appeal[i] = 1; 
+
+memory[i] = (char*) malloc (page_size); 
+
+tmp_buff--; 
+
+} 
+
+} 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(tmp_buff != 0) 
+
+{ 
+
+for(tmp1=1;tmp1<=appeal_buff_max;tmp1++) //от минимального к максимальному по обращениям 
+
+{ 
+
+//printf("%d = tmp1\n", tmp1); 
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(processes[i] != new_name && appeal[i] == tmp1 && tmp_buff != 0 && tmp_buff_2 == 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = page_size; 
+
+appeal[i] = 1; 
+
+tmp_buff--; 
+
+} 
+
+else 
+
+if(processes[i] != new_name && appeal[i] == tmp1 && tmp_buff != 1 && tmp_buff > 0 && tmp_buff_2 != 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = page_size; 
+
+appeal[i] = 1; 
+
+tmp_buff--; 
+
+} 
+
+else 
+
+if(processes[i] != new_name && appeal[i] == tmp1 && tmp_buff == 1 && tmp_buff_2 != 0) 
+
+{ 
+
+processes[i] = new_name; 
+
+numbers[i] = new_size%page_size; 
+
+memory[i] = (char*) malloc (new_size%page_size); 
+
+appeal[i] = 1; 
+
+tmp_buff--; 
+
+} 
+
+} 
+
+} 
+
+} 
+
+else 
+
+{ 
+
+break; 
+
+} 
+
+} 
+
+  
+
+printf(" Успех! Процесс %s %d был добавлен с замещением других\n", new_name.c_str(), new_size); 
+
+  
+
+P[number].name = new_name; 
+
+P[number].size = new_size; 
+
+P[number].appeal = 1; 
+
+number++; 
+
+} 
+
+} 
+
+else 
+
+if(new_size == 0) 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели букву или символ. Попробуйте ещё раз"); 
+
+} 
+
+else 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели отрицательное значение, значение больше общей памяти. Попробуйте ещё раз"); 
+
+} 
+
+} 
+
+  
+
+tick = 0; 
+
+} 
+
+  
+
+void prew(int page, int volume, int &page_free, int &page_size, int &page_free_proc, int number, int &tick, int *numbers, string *processes, int *appeal) 
+
+{ 
+
+int i; 
+
+const char *name; 
+
+  
+
+page_free = 0; 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(numbers[i] == 0) 
+
+{ 
+
+page_free++; 
+
+} 
+
+} 
+
+  
+
+printf("\n"); 
+
+puts("_______________________________________"); 
+
+puts("| № | name | size | appeal |"); 
+
+puts("|_______|_____________|______|_________|"); 
+
+  
+
+for(i=0; i<page; i++) 
+
+{ 
+
+if((i+1)/10 == 0) 
+
+{ 
+
+printf("| %-3d | %-4s | %d | %d |\n", i+1, processes[i].c_str(), numbers[i], appeal[i]); 
+
+puts("|_______|_____________|______|_________|"); 
+
+} 
+
+else 
+
+if((i+1)/100 == 0) 
+
+{ 
+
+printf("| %-3d | %-4s | %d | %d |\n", i+1, processes[i].c_str(), numbers[i], appeal[i]); 
+
+puts("|_______|_____________|______|_________|"); 
+
+} 
+
+else 
+
+{ 
+
+printf("| %-3d | %-4s | %d | %d |\n", i+1, processes[i].c_str(), numbers[i], appeal[i]); 
+
+puts("|_______|_____________|______|_________|"); 
+
+} 
+
+} 
+
+  
+
+page_free_proc = (float(page_free)/float(page)) * 100; 
+
+  
+
+printf("\n"); 
+
+printf(" Общая память: %d\n Страниц: %d\n Число своодных страниц: %d (%d%%)\n Размер страницы: %d\n", volume, page, page_free, page_free_proc ,page_size); 
+
+  
+
+tick = 0; 
+
+} 
+
+  
+
+void delete_proc(int volume, int page, int &page_free, int &page_size, int &number, int &tick, int *numbers, string *processes, int *appeal, char* memory[]) 
+
+{ 
+
+int tick_delete; 
+
+string block_name; 
+
+const char *name; 
+
+int i; 
+
+int n; 
+
+int size; 
+
+int tmp; 
+
+  
+
+puts("------------------"); 
+
+puts(" УДАЛЕНИЕ "); 
+
+puts("------------------"); 
+
+puts(" 1) Удалить 1 процесс"); 
+
+puts(" 2) Очистить всю память"); 
+
+puts(" 3) Назад"); 
+
+puts("------------------"); 
+
+printf("Введите пункт меню: "); 
+
+tick_delete = 0; 
+
+  
+
+while(tick_delete <= 0 || tick_delete > 3) 
+
+{ 
+
+scanf("%d", &tick_delete); 
+
+  
+
+if(tick_delete > 0 && tick_delete <= 3) 
+
+{ 
+
+switch(tick_delete){ 
+
+case 1: puts("Введите название процесса: "); 
+
+getchar(); 
+
+  
+
+n = 0; 
+
+size = 0; 
+
+while(n <= 0) 
+
+{ 
+
+fflush(stdin); 
+
+getline(cin, block_name); 
+
+  
+
+n = 0; 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(processes[i] == block_name) 
+
+{ 
+
+size += numbers[i]; 
+
+processes[i] = ""; 
+
+numbers[i] = 0; 
+
+appeal[i] = 0; 
+
+free(memory[i]); 
+
+n++; 
+
+} 
+
+} 
+
+  
+
+if(n > 0) 
+
+{ 
+
+int tmp; 
+
+for(i=0;i<number;i++) 
+
+{ 
+
+if(P[i].name == block_name) 
+
+{ 
+
+for(tmp=0;tmp<number;tmp++) 
+
+{ 
+
+P[tmp].name = P[tmp+1].name; 
+
+P[tmp].size = P[tmp+1].size; 
+
+P[tmp].appeal = P[tmp+1].appeal; 
+
+} 
+
+} 
+
+} 
+
+number--; 
+
+  
+
+printf(" Успех! Вы удалил процесс %s %d\n", block_name.c_str(), size); 
+
+} 
+
+else 
+
+if(block_name == ".") 
+
+{ 
+
+puts(" Вы вышли из меню удаления (Нажмите любую клавишу)"); 
+
+getchar(); 
+
+break; 
+
+} 
+
+else 
+
+{ 
+
+puts(" ERROR! Процесса с таким именем нет (. - выход из меню). Повторите попытку: "); 
+
+} 
+
+} 
+
+break; 
+
+  
+
+case 2: for(i=0;i<page;i++) 
+
+{ 
+
+processes[i] = ""; 
+
+numbers[i] = 0; 
+
+appeal[i] = 0; 
+
+  
+
+memory[i] = 0; 
+
+} 
+
+  
+
+for(i=0;i<number;i++) 
+
+{ 
+
+P[i].name = ""; 
+
+P[i].size = 0; 
+
+P[i].appeal = 0; 
+
+} 
+
+  
+
+number = 0; 
+
+  
+
+puts(" Успех! Память очищена"); 
+
+break; 
+
+case 3: puts(" Вы вернулись в главное меню"); break; 
+
+default: puts(" ERROR!"); 
+
+getchar(); 
+
+} 
+
+} 
+
+else 
+
+if(tick_delete == 0) 
+
+{ 
+
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: "); 
+
+getchar(); 
+
+} 
+
+else 
+
+{ 
+
+puts(" ERROR! Вы ввели отрицательное значение или значение больше заданной памяти. Попробуйте ещё раз: "); 
+
+getchar(); 
+
+} 
+
+} 
+
+  
+
+tick = 0; 
+
+} 
+
+  
+
+void f_appeal(int number, int &volume, int &page, int &page_size, int &tick, string *processes, int *numbers, int *appeal){ 
+
+  
+
+int i, n; 
+
+int tick_appeal; 
+
+string name_appeal; 
+
+const char *name; 
+
+int size; 
+
+  
+
+puts("------------------"); 
+
+puts(" ОБРАЩЕНИЕ "); 
+
+puts("------------------"); 
+
+puts(" 1) Обратиться к процессу"); 
+
+puts(" 2) Назад"); 
+
+puts("------------------"); 
+
+printf("Введите пункт меню: "); 
+
+tick_appeal = 0; 
+
+  
+
+while(tick_appeal <= 0 || tick_appeal > 2) 
+
+{ 
+
+scanf("%d", &tick_appeal); 
+
+size = 0; 
+
+  
+
+if(tick_appeal > 0 && tick_appeal <= 2) 
+
+{ 
+
+n = 0; 
+
+getchar(); 
+
+switch(tick_appeal) 
+
+{ 
+
+case 1: puts("Введите название процесса: "); 
+
+  
+
+while(n <= 0){ 
+
+fflush(stdin); 
+
+getline(cin, name_appeal); 
+
+  
+
+n = 0; 
+
+for(i=0;i<number;i++) 
+
+{ 
+
+if(name_appeal == P[i].name) 
+
+{ 
+
+P[i].appeal++; 
+
+} 
+
+} 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+if(name_appeal == processes[i]) 
+
+{ 
+
+appeal[i]++; 
+
+n++; 
+
+size += numbers[i]; 
+
+} 
+
+} 
+
+  
+
+if(n > 0) 
+
+{ 
+
+printf(" Произведено обращение к процессу: %s %d\n", name_appeal.c_str(), size); 
+
+} 
+
+else 
+
+if(name_appeal == ".") 
+
+{ 
+
+puts(" Вы вышли из меню обращения (Нажмите любую клавишу)"); 
+
+getchar(); 
+
+break; 
+
+} 
+
+else 
+
+{ 
+
+puts(" ERROR! Процесса с таким именем нет (. - выход из меню). Повторите попытку: "); 
+
+} 
+
+} 
+
+break; 
+
+case 2: ;break; 
+
+default: puts(" ERROR! "); 
+
+} 
+
+} 
+
+else 
+
+if(tick_appeal == 0) 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: "); 
+
+} 
+
+else 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели отрицательное значение, букву или значение больше заданной памяти. Попробуйте ещё раз: "); 
+
+} 
+
+} 
+
+  
+
+tick = 0; 
+
+} 
+
+  
+
+  
+
+int main(){ 
+
+  
+
+setlocale(LC_ALL, "Rus"); 
+
+SetConsoleCP(1251); 
+
+SetConsoleOutputCP(1251); 
+
+  
+
+int number = 0, queue = 0, size, n, i, tmp, tmp_buff, size_buff; 
+
+int volume = 0, page, page_size, page_free = 0, page_free_proc; 
+
+int tick; 
+
+float p_s_result; 
+
+  
+
+puts("Введите общий объем памяти в байтах:"); 
+
+  
+
+while(volume <= 0) 
+
+{ 
+
+scanf("%d", &volume); 
+
+  
+
+if(volume > 0) 
+
+{ 
+
+printf("Введите число страниц (целое число от 1 и не более %d): ", volume); 
+
+  
+
+page = 0; 
+
+p_s_result = 1; 
+
+  
+
+while(page <= 0 || 
+
+page > volume || p_s_result != 0) 
+
+{ 
+
+scanf("%d", &page); 
+
+  
+
+if(page > 0 && page <= volume) 
+
+{ 
+
+page_size = volume/page; //размер страницы 
+
+  
+
+float page_size_test = float(volume)/float(page); 
+
+float(p_s_result) = page_size_test - page_size; 
+
+  
+
+if(p_s_result == 0) 
+
+{ 
+
+page_free = page; //свободные страницы 
+
+string processes[page]; //имена процессов по страницам 
+
+int numbers[page]; //размеры процессов по страницам 
+
+char* memory[page]; //память 
+
+int appeal[page]; //количество обращений 
+
+  
+
+for(i=0;i<page;i++) 
+
+{ 
+
+processes[i] = ""; 
+
+numbers[i] = 0; 
+
+appeal[i] = 0; 
+
+memory[i] = 0; 
+
+} 
+
+  
+
+printf("\n"); 
+
+printf("Общая память: %d\n", volume); 
+
+printf("Страниц: %d\n", page); 
+
+printf("Число свободных страниц: %d (100%%)\n", page_free); 
+
+printf("Размер страницы: %d\n", page_size); 
+
+printf("\n"); 
+
+  
+
+while(tick != 5) 
+
+{ 
+
+menu(); 
+
+scanf("%d", &tick); 
+
+system("cls"); 
+
+if(tick > 0 && tick <= 5) 
+
+{ 
+
+switch(tick) 
+
+{ 
+
+case 1: new_processint(volume, page, page_size, page_free, number, tick, numbers, processes, appeal, memory); break; 
+
+case 2: prew(page, volume, page_free, page_size, page_free_proc, number, tick, numbers, processes, appeal); break; 
+
+case 3: delete_proc(volume, page, page_free, page_size, number, tick, numbers, processes, appeal, memory); break; 
+
+case 4: f_appeal(number, volume, page, page_size, tick, processes, numbers, appeal); break; 
+
+case 5: puts(" Вы вышли из программы"); exit(0); break; 
+
+default: puts(" ERROR! Введено неверное значение. Попробуйте ещё раз: "); getchar(); 
+
+} 
+
+} 
+
+else 
+
+if(tick == 0) 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: "); 
+
+} 
+
+else 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели отрицательное значение, букву или значение больше заданной памяти. Попробуйте ещё раз: "); 
+
+} 
+
+} 
+
+} 
+
+else 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Не удалось выделить целый размер страницы (деление вещественное). Попробуйте ещё раз: "); 
+
+} 
+
+} 
+
+else 
+
+if(page == 0) 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: "); 
+
+} 
+
+else 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели отрицательное значение, букву или значение больше заданной памяти. Попробуйте ещё раз: "); 
+
+} 
+
+} 
+
+} 
+
+else 
+
+if(volume == 0) 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: "); 
+
+} 
+
+else 
+
+{ 
+
+getchar(); 
+
+puts(" ERROR! Вы ввели отрицательное значение или значени слишком большое. Попробуйте ещё раз: "); 
+
+} 
+
+} 
+
+} 
+
+ 
