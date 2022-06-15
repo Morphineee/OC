@@ -1,0 +1,146 @@
+let processes = []; 
+let planner = {
+quant: -1,
+rr_quants: null,
+rr_remaining: 0,
+executing: null
+};
+ 
+function step() {
+planner.rr_quants = 1*document.getElementById("planner_quants").value;
+if (planner.rr_quants < 1) {
+console_out("Не задано кол-во квантов планировщика");
+return;
+}
+ 
+// новый квант
+planner.quant++;
+if (planner.quant == 0) {
+out_legend();
+}
+ 
+// найти наивысший приоритет из допустимых процессов
+let highest_priority = null;
+for (i = 0; i < processes.length; i++) {
+if (!is_runnable_process(processes[i])) {
+continue;
+}
+if (highest_priority == null || processes[i].priority < highest_priority) {
+highest_priority = processes[i].priority;
+}
+}
+ 
+// если нет наивысшего приоритета, значит нет процессов для запуска
+if (highest_priority == null)
+{
+planner.executing = null;
+planner.rr_remaining = 0;
+out_processes();
+return;
+}
+ 
+// найти все допустимые процессы с наивысшим приоритетом
+let highest = new Array();
+for (i = 0; i < processes.length; i++) {
+if (!is_runnable_process(processes[i])) {
+continue;
+}
+if (processes[i].priority == highest_priority) {
+highest.push(processes[i]);
+}
+}
+ 
+if (planner.executing == null) {
+// если нет выполняемого процесса, назначить первый
+planner.rr_remaining = 0;
+planner.executing = highest[0];
+} else {
+// найти индекс исполняемого процесса
+let cur = -1;
+for (i = 0; i < highest.length; i++) {
+if (planner.executing == highest[i]) {
+cur = i;
+}
+}
+// найти следующий
+cur++;
+if (cur >= highest.length) {
+cur = 0;
+}
+// назначить следующий если число квантов RR закончилось
+// или процесс вытеснен более приоритетным
+if (planner.rr_remaining <= 0 || highest[cur].priority < planner.executing.priority) {
+planner.rr_remaining = 0;
+planner.executing = highest[cur];
+}
+}
+// Назначить новые кванты для исполняемого процесса,
+// не больше чем осталось квантов в текущем процессе
+if (planner.rr_remaining <= 0) {
+planner.rr_remaining = planner.rr_quants;
+if (planner.rr_remaining > planner.executing.remaining) {
+planner.rr_remaining = planner.executing.remaining;
+}
+}
+out_processes();
+// уменьшить кол-во RR квантов для следующего шага
+planner.rr_remaining--;
+// уменьшить кол-во оставшихся квантов текущего процесса для следующего шага
+planner.executing.remaining--;
+}
+ 
+function is_runnable_process(p) {
+return p.start <= planner.quant && p.remaining > 0
+}
+ 
+function out_processes() {
+let out = "Квант: " + planner.quant.toString().padStart(3, '0') + " -- ";
+for (i = 0; i < processes.length; i++) {
+let color = "gray";
+if (planner.executing == processes[i]) {
+color = "green";
+} else
+if (is_runnable_process(processes[i])) {
+color = "blue";
+}
+out += " <font color=" + color + ">";
+out += processes[i].name;
+out += "</font>";
+}
+out += " -- остаток квантов: " + planner.rr_remaining;
+console_out(out);
+}
+ 
+function out_legend() {
+let out = "<font color=gray>Неактивный</font> <font color=blue>Готовность</font> <font color=green>Исполнение</font>";
+console_out(out);
+}
+ 
+function add_process() {
+let name = document.getElementById("process_name").value;
+let duration = 1*document.getElementById("process_duration").value;
+let priority = 1*document.getElementById("process_priority").value;
+let start = 1*document.getElementById("process_start").value;
+if (name.length < 1 || duration < 1) {
+console_out("Заполните параметры процесса");
+return;
+}
+let p = new Object();
+p.name = name;
+p.duration = duration;
+p.remaining = duration;
+p.priority = priority;
+p.start = start;
+processes.push(p);
+ 
+let out =
+"Номер: " + processes.length +
+", Имя: " + name +
+", Длительность: " + duration +
+", Приоритет: " + priority +
+", Старт: " + start;
+document.getElementById("processes").innerHTML += out + "<br/>";
+}
+function console_out(out) {
+document.getElementById("console").innerHTML += out + "<br/>";
+}
