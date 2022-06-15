@@ -1,0 +1,19 @@
+ md Zadanie1 
+ cd Zadanie1 
+ md A1 
+ md A2 
+ md A3 
+ copy "C:\Windows\*.ini" A1 
+ cd "C:\Windows" 
+ dir /b > "H:\Zadanie1\A2\file.txt" 
+ cd "D:\Zadanie1" 
+ copy D:\Zadanie1\A1 A3 & copy 
+ copy D:\Zadanie1\A2 A3 & copy 
+ cd A3 
+ dir 
+ cd D:\Zadanie1\A1 
+ ren D:\Zadanie1\A1\*.ini ~ *.bak 
+ cd D:\Zadanie1\A3 
+ set >  D:\Zadanie1\A3\set.txt 
+ set myname = Novikova
+ set > D:\Zadanie1\A3\new_set.txt
