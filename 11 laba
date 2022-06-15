@@ -1,0 +1,3183 @@
+#include <stdio.h>
+#include <conio.h>
+#include <string>
+#include <stdlib.h>
+#include <iostream>
+#include <locale.h>
+#include <direct.h>
+#include <windows.h>
+ 
+using namespace std;
+ 
+struct account {
+string name;
+string login;
+string password;
+} A[50];
+ 
+struct text{
+string text[1000];
+};
+ 
+struct file{
+string name[1000];
+int size[1000];
+struct text text;
+} F[10000];
+ 
+struct catalog {
+string name;
+long int size;
+int size_free;
+struct file file;
+} C[10000];
+ 
+void SetColor(int text, int bg)
+{
+HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+}
+ 
+void menu(int cluster, int volume, string login){
+ 
+int i;
+int cluster_free;
+int volume_free = volume;
+ 
+cluster_free = 0;
+ 
+for(i=0;i<cluster; i++)
+{
+if(C[i].size == 0 && C[i].name == "")
+{
+cluster_free++;
+}
+ 
+volume_free -= C[i].size;
+}
+ 
+float cluster_free_proc = float(cluster_free)/float(cluster) * 100;
+ 
+float volume_free_proc = float(volume_free)/float(volume) * 100;
+ 
+ 
+printf("\n");
+puts("------------------");
+puts(" МЕНЮ ");
+printf("account: %s\n", login.c_str());
+puts("------------------");
+puts(" 1) Форматировать виртуальный файл"); //+
+puts(" 2) Добавить каталог/текстовый файл"); //+
+puts(" 3) Поиск каталога/файла"); //+
+puts(" 4) Доступ к жесткому диску"); //+
+puts(" 5) Удалить файл/каталог"); //+
+puts(" 6) Редактировать текстовый файл"); //+
+puts(" 7) Аккаунт");
+puts(" 8) Выйти из программы"); //+
+puts("------------------");
+printf(" Свободная память: %d (%.0f%%)\n", volume_free, volume_free_proc); //+
+printf(" Свободных кластеров: %d (%.0f%%)\n", cluster_free, cluster_free_proc); //+
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+ 
+void form(int &cluster, int &cluster_size, int volume, int &tick){ //форматирование виртуального файла
+ 
+int tick_form;
+int i, tmp, cluster_size_1;
+float cluster_result, cluster_f;
+ 
+puts("Вы действительно хотите форматировать виртуальный диск?");
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_form);
+ 
+if(tick_form == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_form < 0 || tick_form > 2)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+}while(tick_form <= 0 || tick_form > 2);
+ 
+if(tick_form > 0 && tick_form <= 2)
+{
+switch(tick_form)
+{
+case 1: for(i=0;i<cluster;i++)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+C[i].file.name[tmp] = "";
+C[i].file.size[tmp] = 0;
+C[i].file.text.text[tmp] = "";
+}
+C[i].name = "";
+C[i].size = 0;
+C[i].size_free = 0;
+}
+ 
+puts(" Форматирование прошло успешно!");
+printf("Введите размер кластера (общий размер памяти: %d): ", volume);
+ 
+do
+{
+scanf("%d", &cluster_size_1); //проверка введенного значения
+ 
+if(cluster_size_1 == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(cluster_size_1 < 0)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+else
+{
+cluster = volume/cluster_size_1; //расчет кластеров
+cluster_f = float(volume)/float(cluster_size_1); //float остаток
+cluster_result = cluster_f - cluster; //с остатков - без остатка
+ 
+if(cluster_result != 0)
+{
+getchar();
+puts(" ERROR! Не удалось выделить целый размер страницы (деление вещественное). Попробуйте ещё раз: ");
+}
+else
+if(cluster > 1000)
+{
+puts(" ERROR! Количество кластеров превышает 1000. Попробуйте ещё раз: ");
+}
+}
+}while(cluster_size_1 <= 0 || cluster_result != 0 || cluster > 1000);
+cluster_size = cluster_size_1;
+ 
+printf("\n");
+printf("Общая память: %d\n", volume);
+printf("Размер кластера: %d\n", cluster_size);
+printf("Количество кластеров: %d\n", cluster);
+printf("Свободное пространство: %d (100%%)\n",
+volume);
+printf("\n");
+break;
+ 
+case 2: puts(" Форматирование отменено");
+break;
+default: puts("ERROR!");
+}
+}
+ 
+tick = 0;
+}
+ 
+void add(int cluster, int &tick, int cluster_size, int volume){ //добавление файла/каталога
+ 
+const char *name;
+int i,n, error, error_word, error_rep, ext;
+int tick_new, tick_add, index, file_size, tmp;
+string catalog_name, file_name, text;
+ 
+puts("Что вы хотите добавить?");
+puts(" 1) Каталог");
+puts(" 2) Текстовый файл");
+puts(" 3) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_add);
+ 
+if(tick_add == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_add < 0 || tick_add > 3)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+}while(tick_add <= 0 || tick_add > 3);
+ 
+switch(tick_add)
+{
+case 1: n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+n++; //свободные кластеры под каталог
+}
+}
+ 
+if(n > 0)
+{
+getchar();
+printf("Введите имя каталога (. - вернуться): ");
+ 
+do
+{
+error = 0;
+error_word = 0;
+error_rep = 0;
+ext = 0;
+ 
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+if(catalog_name == ".")
+{
+ext = 1;
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+error_rep++;
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(error_rep > 0)
+{
+puts(" Каталог с таким именем уже существует. Попробуйте ещё раз: ");
+}
+else
+{
+break;
+}
+ 
+ 
+} while (catalog_name == "" || catalog_name == "." || error == 0 || error_word > 0 || error_rep > 0);
+if(ext == 0)
+{
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+C[i].name = catalog_name;
+C[i].size = 0;
+C[i].size_free = cluster_size;
+printf(" Успех! Добавлен каталог %s добавлен к кластер №%d", catalog_name.c_str(), i+1);
+break;
+}
+}
+}
+else
+{
+system("cls");
+break;
+}
+ 
+}
+else
+{
+puts("Нет свободных кластеров. Сделайте очистку или форматирование");
+}
+break;
+ 
+case 2: n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "")
+{
+n++;
+}
+}
+ 
+if(n > 0)
+{
+printf("Введите имя каталога для добавления в него файла (. - вернуться): ");
+getchar();
+ 
+do
+{
+ext = 0;
+error = 0;
+error_word = 0;
+error_rep = 0;
+ 
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+if(catalog_name == ".")
+{
+ext = 1;
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+error_rep++;
+index = i;
+break;
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(error_rep == 0)
+{
+puts(" Каталога с такием именем нет. Попробуйте ещё раз: ");
+}
+else
+{
+break;
+}
+ 
+} while (catalog_name == "" || catalog_name != "." || error == 0 || error_word > 0 || error_rep == 0);
+ 
+if(ext == 0)
+{
+ 
+n = 0;
+int cluster_size_free_buff;
+cluster_size_free_buff = 0;
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+n++; //свободные кластеры
+cluster_size_free_buff += cluster_size;
+}
+}
+cluster_size_free_buff += C[index].size_free;
+ 
+printf("Свободных кластеров: %d\nРазмер памяти в каталоге без расширения: %d байт (с расширением кластеров: %d байт)\n",i,C[index].size_free, cluster_size_free_buff);
+ 
+if(ext == 0 && cluster_size_free_buff != 0)
+{
+ 
+puts("Введите имя файла: ");
+ 
+do{
+ext = 0;
+error = 0;
+error_word = 0;
+error_rep = 0;
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name)
+{
+error_rep++;
+index = i;
+break;
+}
+}
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(error_rep > 0)
+{
+puts(" Файл с такием именем существует. Попробуйте ещё раз: ");
+}
+else
+{
+break;
+}
+ 
+}while(file_name == "" || file_name != "." || error == 0 || error_word > 0 || error_rep > 0);
+ 
+printf("Введите размер файла (до %d байт): \n", cluster_size_free_buff);
+int size_free;
+ 
+do{
+scanf("%d", &file_size);
+ 
+int k = 0;
+size_free = 0;
+ 
+if(file_size == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(file_size > volume || file_size <= 0)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение больше общей памяти. Попробуйте ещё раз: ");
+}
+}while(file_size <= 0 || file_size > volume);
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+size_free += cluster_size;
+}
+ 
+if(C[i].name == C[index].name)
+{
+size_free += C[index].size_free;
+}
+}
+ 
+if(file_size > size_free)
+{
+puts("Невозможно добавить процесс, размер слишком велик");
+}
+else
+{
+puts("Введите текст в файл: ");
+fflush(stdin);
+getline(cin, text);
+if(C[index].size_free >= file_size)
+{
+for(i=0;i<C[index].size_free;i++)
+{
+if(C[index].file.name[i] == "" && C[index].file.size[i] == 0)
+{
+C[index].file.name[i] = file_name;
+C[index].file.size[i] = file_size;
+C[index].file.text.text[i] = text;
+C[index].size += file_size;
+C[index].size_free -= file_size;
+printf(" Файл %s [%d байт] успешно добавлен в каталог %s\n", file_name.c_str(), file_size, catalog_name.c_str());
+break;
+}
+}
+}
+else
+{
+while(C[index].size_free < file_size)
+{
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0 && C[index].size_free < file_size)
+{
+C[i].name = C[index].name;
+C[index].size_free += cluster_size;
+ 
+printf(" Каталог %s занял кластер №%d\n", C[index].name.c_str(), i);
+}
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[index].file.name[i] == "" && C[index].file.size[i] == 0)
+{
+C[index].file.name[i] = file_name;
+C[index].file.size[i] = file_size;
+C[index].file.text.text[i] = text;
+C[index].size += file_size;
+C[index].size_free -= file_size;
+ 
+printf(" Файл %s [%d байт] успешно добавлен в каталог %s\n", file_name.c_str(), file_size, catalog_name.c_str());
+break;
+}
+}
+}
+}
+ 
+break;
+}
+else
+if(cluster_size_free_buff == 0)
+{
+puts(" Нет свободной памяти. Проведите очистку или удалите каталог/файл");
+break;
+}
+}
+else
+{
+system("cls");
+}
+}
+else
+{
+puts("Каталогов нет. Создайте каталог");
+}
+break;
+ 
+case 3: puts("Вы вышли в меню (Нажмите любую клавишу)");
+getchar();
+system("cls");
+break;
+ 
+default: puts(" ERROR!");
+}
+ 
+tick = 0;
+}
+ 
+void direct(int cluster, int &tick, int volume, int cluster_size){ //обращение к жесткому диску
+ 
+const char *name;
+int tick_direct, i, n, k, tmp;
+int error, error_word, error_rep;
+int index;
+string catalog_name;
+string file_name;
+string file_text;
+FILE *new_file[cluster];
+FILE *ADD_FILE;
+ 
+puts("Что вы хотит сделать?");
+puts(" 1) Выгрузить с виртуального файла");
+puts(" 2) Загрузить на виртуальный файл");
+puts(" 3) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_direct);
+ 
+if(tick_direct == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_direct < 0 || tick_direct > 3)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" || C[i].size != 0)
+{
+n++;
+}
+}
+ 
+if(n == 0)
+{
+break;
+}
+ 
+}while(tick_direct <= 0 || tick_direct > 3);
+system("cls");
+switch(tick_direct){
+if(n > 0)
+{
+case 1: puts("Что вы хотите выгрузить?");
+puts(" 1) Каталог");
+puts(" 2) Файл");
+puts(" 3) Выйти");
+puts("------------------");
+printf("Введите номер пункта: ");
+tick_direct = 0;
+ 
+do{
+scanf("%d", &tick_direct);
+ 
+if(tick_direct == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_direct < 0 || tick_direct > 3)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+}while(tick_direct <= 0 || tick_direct > 3);
+ 
+switch(tick_direct)
+{
+case 1: n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "")
+{
+n++;
+}
+}
+ 
+if(n > 0)
+{
+puts("Введите название каталога (. - вернуться): ");
+getchar();
+ 
+do
+{
+error = 0;
+error_word = 0;
+error_rep = 0;
+ 
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+if(catalog_name == ".")
+{
+system("cls");
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+error_rep++;
+break;
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts(" Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(error_rep == 0)
+{
+puts(" Каталога с таким именем нет. Попробуйте ещё раз: ");
+}
+ 
+} while (catalog_name == "" || error == 0 || error_word > 0 || error_rep == 0);
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+mkdir(catalog_name.c_str());
+printf("Каталог %s успешно вынесен\n", C[i].name.c_str());
+ 
+char file[200];
+ 
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] != "" && C[i].file.size[tmp] != 0)
+{
+chdir(catalog_name.c_str());
+char *file_name = strcpy(file,C[i].file.name[tmp].c_str());
+char *file_rassh = strcat(file_name,".txt");
+new_file[tmp] = fopen(file_rassh, "w+");
+fprintf(new_file[tmp], C[i].file.text.text[tmp].c_str());
+fclose(new_file[tmp]);
+chdir("D:/OC");
+}
+}
+break;
+}
+}
+}
+else
+{
+puts("Каталогов не найдено. Создайте каталог");
+}
+ 
+break;
+ 
+case 2: n = 0;
+k = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+k++;
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] != "" && C[i].file.size[tmp] != 0)
+{
+n++;
+}
+}
+}
+}
+ 
+if(n>0)
+{
+puts("Введите название файла (. - вернуться): ");
+getchar();
+do{
+error = 0;
+error_word = 0;
+error_rep = 0;
+ 
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+if(file_name == ".")
+{
+system("cls");
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+error_rep++;
+break;
+}
+}
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts(" Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(error_rep == 0)
+{
+puts(" Файла с таким именем нет. Попробуйте ещё раз: ");
+}
+ 
+} while (file_name == "" || error == 0 || error_word > 0 || error_rep == 0);
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+chdir("D:/OC");
+char file[200];
+mkdir(C[i].name.c_str());
+chdir(C[i].name.c_str());
+ 
+char *file_name = strcpy(file,C[i].file.name[tmp].c_str());
+char *file_rassh = strcat(file_name,".txt");
+new_file[tmp] = fopen(file_rassh, "w+");
+fprintf(new_file[tmp], C[i].file.text.text[tmp].c_str());
+fclose(new_file[tmp]);
+chdir("D:/OC");
+}
+}
+}
+}
+chdir("D:/OC");
+ 
+printf("Файлы с именем %s были вынесены по каталогам\n",file_name.c_str());
+ 
+}
+else
+if(k > 0 && n == 0)
+{
+puts(" Найдены каталоги, но не найдены файлы. Создайте файл");
+}
+else
+if(k == 0 && n == 0)
+{
+puts(" Файлов не найдено. Создайте файл");
+}
+break;
+case 3: system("cls");
+break;
+default: puts(" Error!");
+}
+}
+else
+{
+puts("Вируальный файл пуст");
+}
+break;
+ 
+case 2: puts("Введите полный путь к текстовому файлу (. - вернуться): ");
+puts("Пример: \"C:/Users/text.txt\" или \"text.txt\" если файл находиться в папке с программой");
+getchar();
+ 
+do{
+fflush(stdin);
+getline(cin, file_name);
+ 
+if(file_name == ".")
+{
+system("cls");
+break;
+}
+ 
+ADD_FILE = fopen(file_name.c_str(), "r");
+ 
+if(ADD_FILE == NULL)
+{
+puts("Не удалось открыть файл, проверьте правильность указания пути и его наличие. Попробуйте ещё раз: ");
+n = 0;
+}
+else
+{
+char s[200];
+n = 1;
+fgets(s,200,ADD_FILE);
+file_text = s;
+}
+ 
+}while(n == 0);
+ 
+if(file_name != ".")
+{
+puts("Введите имя каталога для файла (. - вернуться): ");
+int error_rep_catalog;
+do
+{
+error = 0;
+error_word = 0;
+error_rep_catalog = 0;
+ 
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+if(catalog_name == ".")
+{
+system("cls");
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+error_rep_catalog++;
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts(" Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+{
+break;
+}
+ 
+} while (catalog_name == "" || error == 0 || error_word > 0);
+ 
+int freedom;
+freedom = 0;
+int size;
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+freedom += cluster_size;
+}
+ 
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+freedom += C[i].size_free;
+}
+}
+ 
+printf("Укажите размер файла (%d - всего доступно для каталога): ", freedom);
+ 
+do{
+scanf("%d", &size);
+ 
+if(size == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(size < 0 || size > freedom)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+}while(size <= 0 || size > freedom);
+ 
+puts("Введите имя файла (. - вернуться): ");
+getchar();
+do{
+error = 0;
+error_word = 0;
+error_rep = 0;
+ 
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+if(file_name == ".")
+{
+system("cls");
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+error_rep++;
+break;
+}
+}
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts(" Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(error_rep > 0)
+{
+puts(" Файла с таким именем существует. Попробуйте ещё раз: ");
+}
+ 
+} while (file_name == "" || error == 0 || error_word > 0 || error_rep > 0);
+ 
+if(file_name != ".")
+{
+n = 0;
+k = 0;
+index = 0;
+ 
+if(error_rep_catalog == 0)
+{
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+C[i].name = catalog_name;
+C[i].size_free = cluster_size;
+C[i].size = 1;
+break;
+}
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+if(C[i].size_free <= size)
+{
+n = 0;
+}
+else
+{
+n = 1;
+}
+ 
+index = i;
+break;
+ 
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0)
+{
+k++; //свободные блоки
+}
+}
+ 
+if(n == 0)
+{
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == "" && C[i].file.size[tmp] == 0)
+{
+C[i].file.name[tmp] = file_name;
+C[i].file.size[tmp] = size;
+C[i].file.text.text[tmp] = file_text;
+ 
+C[i].size += size-1;
+C[i].size_free -= size;
+printf(" Файл %s [%d байт] успешно добавлен в каталог %s\n", file_name.c_str(), size, catalog_name.c_str());
+break;
+}
+}
+}
+}
+}
+else
+if(size <= (k*cluster_size) + C[index].size_free)
+{
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == "" && C[i].size == 0 && C[index].size_free < size)
+{
+C[i].name = C[index].name;
+C[index].size_free += cluster_size;
+ 
+printf(" Каталог %s занял кластер №%d\n", C[index].name.c_str(), i+1);
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[index].file.name[i] == "" && C[index].file.size[i] == 0)
+{
+C[index].file.name[i] = file_name;
+C[index].file.size[i] = size;
+C[index].file.text.text[i] = file_text;
+C[index].size += size-1;
+C[index].size_free -= size;
+ 
+printf(" Файл %s [%d байт] успешно добавлен в каталог %s\n", file_name.c_str(), size, catalog_name.c_str());
+break;
+}
+}
+}
+else
+{
+printf("Не удалось выделить память для файла (доступная память для каталога %s: %d)",C[index].name.c_str(),k*cluster_size + C[index].size_free);
+}
+}
+}
+break;
+ 
+case 3: system("cls");
+break;
+ 
+default: puts(" ERROR!");
+}
+ 
+tick = 0;
+}
+ 
+void search(int cluster, int &tick, int volume){ //поиск каталогов и файлов
+ 
+const char *name;
+int i, n, tmp, error, error_word;
+int tick_search;
+string catalog_name, file_name;
+ 
+puts("Что вы хотите найти?");
+puts(" 1) Каталог");
+puts(" 2) Файл");
+puts(" 3) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_search);
+ 
+if(tick_search == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_search < 0 || tick_search > 3)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+}while(tick_search <= 0 || tick_search > 3);
+ 
+switch(tick_search){
+ 
+case 1: printf("Введите имя каталога (. - вернуться): ");
+getchar();
+ 
+do
+{
+n = 0;
+error = 0;
+error_word = 0;
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+if(catalog_name == ".")
+{
+system("cls");
+break;
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(catalog_name == C[i].name)
+{
+printf(" Найден каталог: %s/ [%d байт]\n", catalog_name.c_str(), C[i].size);
+n++;
+break;
+}
+}
+ 
+if(n == 0)
+{
+puts("Каталога с таким именем нет");
+}
+ 
+} while (catalog_name == "" || catalog_name == "." || error == 0 || error_word > 0 || n == 0);
+break;
+ 
+case 2: n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] != "" && C[i].file.size[tmp] != 0)
+{
+n++;
+}
+}
+}
+}
+ 
+if(n > 0)
+{
+n = 0;
+ 
+printf("Введите имя файла (. - вернуться): ");
+getchar();
+ 
+do{
+error = 0;
+error_word = 0;
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+if(file_name == ".")
+{
+system("cls");
+break;
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<volume;tmp++)
+{
+if(C[i].file.name[tmp] == file_name)
+{
+n++;
+printf("Найден файл: %s/%s [%d байт]\n", C[i].name.c_str(), C[i].file.name[tmp].c_str(), C[i].file.size[tmp]);
+break;
+}
+}
+}
+}
+ 
+if(error == 0)
+{
+puts(" Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(n == 0)
+{
+puts(" Файлов с таким именем нет. Попробуйте ещё раз: ");
+}
+}while(n == 0 || file_name == "" || file_name == "." || error == 0 || error_word > 0);
+}
+else
+{
+puts(" Файлов не обнаружено!");
+}
+break;
+ 
+case 3: system("cls");
+break;
+ 
+default: puts(" ERROR!");
+}
+ 
+tick = 0;
+}
+ 
+void delt(int cluster, int volume, int &tick, int cluster_size){
+ 
+const char *name;
+int i, n, k, tmp, index, ext, test;
+int error, error_word;
+n = 0, k = 0;
+int tick_delete, tick_delete_podt, size;
+string catalog_name, file_name;
+ 
+for(i=0;i<cluster;i++)
+ 
+{
+n++;
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] != "" && C[i].file.size[tmp] != 0)
+{
+k++;
+}
+}
+}
+}
+ 
+if(n > 0)
+{
+puts("Что хотите удалить?");
+puts(" 1) Каталог");
+puts(" 2) Файл");
+puts(" 3) Файл (с указанием каталога)");
+puts(" 4) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_delete);
+ 
+if(tick_delete == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_delete < 0 || tick_delete > 4)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+}while(tick_delete <= 0 || tick_delete > 4);
+ 
+switch(tick_delete)
+{
+case 1: puts("Введите название каталога (. - вернуться): ");
+getchar();
+do
+{
+error = 0;
+ext = 1;
+error_word = 0;
+test = 0;
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+index = i;
+test = 1; //если каталог есть
+break;
+}
+}
+ 
+if(catalog_name == ".")
+{
+ext = 0;
+break;
+}
+ 
+if(error == 0)
+{
+puts("Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(test == 0)
+{
+puts("Каталога с таким именем нет. Попробуйте ещё раз: ");
+}
+} while (catalog_name == "" || catalog_name == "." || error == 0 || error_word > 0 || test == 0);
+ 
+if(ext == 1 && test == 1)
+{
+printf("Удалить каталог %s [%d байт]\n", catalog_name.c_str(), C[index].size);
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_delete_podt);
+ 
+if(tick_delete_podt == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_delete_podt < 0 || tick_delete_podt > 2)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+}while(tick_delete_podt <= 0 || tick_delete_podt > 2);
+ 
+switch(tick_delete_podt)
+{
+case 1: printf(" Успех! Каталог %s/ [%d байт] был удален\n",C[index].name.c_str(), C[index].size);
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+C[i].file.name[tmp] = "";
+C[i].file.size[tmp] = 0;
+C[i].file.text.text[tmp] = "";
+}
+ 
+C[i].name = "";
+C[i].size = 0;
+C[i].size_free = 0;
+}
+}
+ 
+break;
+case 2: puts("Вы отменили удаление (Нажмите любую клавишу)");
+getchar();
+break;
+default: puts(" ERROR!");
+}
+}
+else
+{
+system("cls");
+}
+break;
+ 
+case 2: puts("Введите имя файла (. - вернуться): ");
+getchar();
+ 
+do{
+error = 0;
+ext = 1;
+error_word = 0;
+test = 0;
+size = 0;
+index = 0;
+ 
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name)
+{
+ 
+index++;
+size = C[i].file.size[tmp];
+test = 1; //если каталог есть
+}
+}
+}
+}
+ 
+if(file_name == ".")
+{
+ext = 0;
+break;
+}
+ 
+if(error == 0)
+{
+puts("Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(test == 0)
+{
+puts("Файла с таким именем нет. Попробуйте ещё раз: ");
+}
+} while (file_name == "" || file_name == "." || error == 0 || error_word > 0 || test == 0);
+ 
+if(ext == 1 && test == 1)
+{
+if(index == 1)
+{
+printf("Удалить файл %s/%s [%d байт]\n", C[index].name.c_str(), file_name.c_str(), size);
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_delete_podt);
+ 
+if(tick_delete_podt == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_delete_podt < 0 || tick_delete_podt > 2)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+}while(tick_delete_podt <= 0 || tick_delete_podt > 2);
+ 
+switch(tick_delete_podt)
+{
+case 1: printf(" Успех! Файл %s/%s [%d байт] был удален\n", C[index].name.c_str(), file_name.c_str(), size);
+ 
+int tmp_1;
+for(i=0;i<cluster;i++)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name)
+{
+C[i].size -= C[i].file.size[tmp];
+C[i].size_free += C[i].file.size[tmp];
+ 
+C[i].file.name[tmp] = "";
+C[i].file.size[tmp] = 0;
+C[i].file.text.text[tmp] = "";
+ 
+if(C[i].size_free >= cluster_size)
+{
+for(tmp_1=0;tmp_1<cluster;tmp_1++)
+{
+if(C[tmp_1].name == C[i].name && C[tmp_1].size == 0)
+{
+C[tmp_1].name = "";
+}
+}
+}
+}
+}
+}
+ 
+break;
+case 2: puts("Вы отменили удаление");
+break;
+default: puts(" ERROR!");
+}
+}
+else
+{
+puts("Удалить файлы: ");
+int numb;
+numb = 0;
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0);
+{
+printf(" %d) %s/%s [%d байт]\n", numb+1, C[i].name.c_str(), C[i].file.name[tmp].c_str(), C[i].file.size[tmp]);
+numb++;
+break;
+}
+}
+}
+}
+puts("\n 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+do{
+scanf("%d", &tick_delete_podt);
+ 
+if(tick_delete_podt == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_delete_podt < 0 || tick_delete_podt > 2)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+}while(tick_delete_podt <= 0 || tick_delete_podt > 2);
+ 
+switch(tick_delete_podt)
+{
+case 1: printf(" Успех! Файлы ");
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0);
+{
+printf("%s/%s [%d байт]\n",C[i].name.c_str(), C[i].file.name[tmp].c_str(), C[i].file.size[tmp]);
+break;
+}
+}
+}
+}
+ 
+printf("были удалены!\n");
+int tmp_1;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+C[i].size -= C[i].file.size[tmp];
+C[i].size_free += C[i].file.size[tmp];
+ 
+C[i].file.name[tmp] = "";
+C[i].file.size[tmp] = 0;
+C[i].file.text.text[tmp] = "";
+ 
+if(C[i].size_free >= cluster_size)
+{
+for(tmp_1=0;tmp_1<cluster;tmp_1++)
+{
+if(C[tmp_1].name == C[i].name && C[tmp_1].size == 0)
+{
+C[tmp_1].name = "";
+}
+}
+}
+}
+}
+}
+}
+ 
+break;
+case 2: puts("Вы отменили удаление (Нажмите любую клавишу)");
+getchar();
+break;
+default: puts(" ERROR!");
+}
+}
+}
+else
+{
+system("cls");
+}
+break;
+ 
+case 3: puts("Введите название каталога (. - вернуться): ");
+getchar();
+do
+{
+error = 0;
+ext = 1;
+error_word = 0;
+test = 0;
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+if(catalog_name == ".")
+{
+ext = 0;
+break;
+}
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name)
+{
+index = i;
+test = 1; //если каталог есть
+break;
+}
+}
+ 
+if(catalog_name == ".")
+{
+break;
+ext = 0;
+}
+ 
+if(error == 0)
+{
+puts("Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(test == 0)
+{
+puts("Каталога с таким именем нет. Попробуйте ещё раз: ");
+}
+} while (catalog_name == "" || catalog_name == "." || error == 0 || error_word > 0 || test == 0);
+ 
+if(ext == 1 && test == 1)
+{
+puts("Введите имя файла (. - вернуться): ");
+ 
+do{
+error = 0;
+ext = 1;
+error_word = 0;
+test = 0;
+size = 0;
+index = 0;
+ 
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+size = C[i].file.size[tmp];
+test = 1;
+break;
+}
+}
+}
+}
+ 
+if(file_name == ".")
+{
+ext = 0;
+break;
+}
+ 
+if(error == 0)
+{
+puts("Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(test == 0)
+{
+puts("Файла с таким именем нет. Попробуйте ещё раз: ");
+}
+} while (file_name == "" || file_name == "." || error == 0 || error_word > 0 || test == 0);
+ 
+if(ext == 1 && test == 1)
+{
+printf("Удалить файл %s/%s [%d байт]\n", C[index].name.c_str(), file_name.c_str(), size);
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_delete_podt);
+ 
+if(tick_delete_podt == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_delete_podt < 0 || tick_delete_podt > 2)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+}while(tick_delete_podt <= 0 || tick_delete_podt > 2);
+ 
+switch(tick_delete_podt)
+{
+case 1: printf(" Успех! Файл %s/%s [%d байт] был удален\n", C[index].name.c_str(), file_name.c_str(), size);
+ 
+int tmp_1;
+for(i=0;i<cluster;i++)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name)
+{
+C[i].size -= C[i].file.size[tmp];
+C[i].size_free += C[i].file.size[tmp];
+ 
+C[i].file.name[tmp] = "";
+C[i].file.size[tmp] = 0;
+C[i].file.text.text[tmp] = "";
+ 
+if(C[i].size_free >= cluster_size)
+{
+for(tmp_1=0;tmp_1<cluster;tmp_1++)
+{
+if(C[tmp_1].name == C[i].name && C[tmp_1].size == 0)
+{
+C[tmp_1].name = "";
+}
+}
+}
+}
+}
+}
+break;
+ 
+case 2: puts("Вы отменили удаление");
+break;
+ 
+default: puts(" ERROR!");
+}
+}
+else
+{
+system("cls");
+}
+}
+else
+{
+system("cls");
+}
+break;
+ 
+case 4: system("cls");
+break;
+default: puts(" ERROR!");
+}
+}
+else
+{
+puts(" Каталогов нет. Добавьте или загрузите директорию");
+}
+ 
+tick = 0;
+}
+ 
+void change(int cluster, int &tick){
+ 
+const char *name;
+int error, ext, error_word, test, size, index;
+int i, tmp, n, tick_change;
+string catalog_name, file_name, text;
+ 
+n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] != "" && C[i].file.size[tmp] != 0)
+{
+n++;
+}
+}
+}
+}
+ 
+if(n == 0)
+{
+puts("Файлов не найдено (Нажмите любую клавишу)");
+getchar();
+}
+else
+{
+printf("Введите название каталога (. - вернуться): ");
+getchar();
+ 
+do{
+error = 0;
+ext = 1;
+error_word = 0;
+test = 0;
+size = 0;
+index = 0;
+ 
+fflush(stdin);
+getline(cin, catalog_name);
+ 
+name = catalog_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+test = 1;
+break;
+}
+}
+ 
+if(catalog_name == ".")
+{
+ext = 0;
+break;
+}
+ 
+if(error == 0)
+{
+puts("Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(test == 0)
+{
+puts("Каталога с таким именем нет. Попробуйте ещё раз: ");
+}
+ 
+n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+n++;
+}
+}
+ 
+if(n == 0 && error != 0)
+{
+puts("В каталоге файлов нет. Попробуйте ещё раз: ");
+}
+ 
+} while (catalog_name == "" || catalog_name == "." || error == 0 || error_word > 0 || test == 0 || n == 0);
+ 
+if(ext == 1)
+{
+puts("Введите имя файла (. - вернуться): ");
+ 
+do{
+error = 0;
+ext = 1;
+error_word = 0;
+test = 0;
+size = 0;
+index = 0;
+ 
+fflush(stdin);
+getline(cin, file_name);
+ 
+name = file_name.c_str();
+ 
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] != ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+n = 0;
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+n++;
+printf("Редактировать содержание файла %s/%s [%d байт]?\n", C[i].name.c_str(), C[i].file.name[tmp].c_str(), C[i].file.size[tmp]);
+test = 1;
+break;
+}
+}
+}
+}
+ 
+if(file_name == ".")
+{
+ext = 0;
+break;
+}
+ 
+if(error == 0)
+{
+puts("Название не может быть пустым. Попробуйте еще раз: ");
+}
+else
+if(error_word > 0)
+{
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+}
+else
+if(test == 0)
+{
+puts("Файла с таким именем нет. Попробуйте ещё раз: ");
+}
+ 
+if(n == 0)
+{
+puts("Файл не найден. Попробуйте ещё раз: ");
+}
+ 
+} while (catalog_name == "" || catalog_name == "." || error == 0 || error_word > 0 || test == 0 || n == 0);
+ 
+if(ext == 1)
+{
+puts(" 1) Редактировать");
+puts(" 2) Вернуться");
+puts(" 3) Вывести содержимое");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_change);
+ 
+if(tick_change == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(tick_change <= 0 || tick_change > 3)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+ 
+if(tick_change == 3)
+{
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+printf("\"%s\"", C[i].file.text.text[tmp].c_str());
+printf("\nВведите номер пункта: ");
+getchar();
+break;
+}
+}
+}
+}
+}
+ 
+}while(tick_change <= 0 || tick_change == 3 || tick_change > 3);
+ 
+switch(tick_change)
+{
+case 1: puts("Введите новый текст: ");
+getchar();
+fflush(stdin);
+getline(cin, text);
+ 
+for(i=0;i<cluster;i++)
+{
+if(C[i].name == catalog_name && C[i].size != 0)
+{
+for(tmp=0;tmp<cluster;tmp++)
+{
+if(C[i].file.name[tmp] == file_name && C[i].file.size[tmp] != 0)
+{
+C[i].file.text.text[tmp] = text;
+break;
+}
+}
+}
+}
+puts("Редактирование завершено");
+break;
+case 2: puts("Редактирование отменено");
+break;
+default: puts(" ERROR!");
+}
+}
+else
+{
+system("cls");
+}
+ 
+}
+else
+{
+system("cls");
+}
+}
+ 
+tick = 0;
+}
+ 
+void reg_pr(string &login){
+ 
+const char *name;
+int tick_pr,i, point, n, ok, index_a, sign;
+char S[47], name_ch[12], login_ch[12], password_ch[12];
+int error, error_word;
+string name_a, password;
+FILE *account;
+int t;
+ 
+puts("Добро пожаловать! Для продолжения необходимо войти в аккаунт");
+printf("\n");
+ok = 0;
+do{
+ok = 0;
+puts(" 1) Войти");
+puts(" 2) Зарегистрироваться");
+puts(" 3) Выйти из программы");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_pr);
+ 
+if(tick_pr == 0)
+{
+system("cls");
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз:\n");
+puts(" 1) Войти");
+puts(" 2) Зарегистрироваться");
+puts(" 3) Выйти из программы");
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+else
+if(tick_pr < 0 || tick_pr > 3)
+{
+system("cls");
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз:\n");
+puts(" 1) Войти");
+puts(" 2) Зарегистрироваться");
+puts(" 3) Выйти из программы");
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+}while(tick_pr <= 0 || tick_pr > 3);
+ 
+switch(tick_pr)
+{
+case 1: getchar();
+system("cls");
+sign = 0;
+do{
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+do{
+error = 0;
+error_word = 0;
+point = 0;
+fflush(stdin);
+getline(cin, login);
+ 
+name = login.c_str();
+if(login == "")
+{
+system("cls");
+puts("Ничего не введено");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(login == ".")
+{
+system("cls");
+point =
+1;
+break;
+}
+else
+{
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] == ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+if(error > 0)
+{
+system("cls");
+puts("Вы ввели пробел. Попробуйте еще раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 20 символов)(. - вернуться): ");
+}
+else
+if(error_word > 0)
+{
+system("cls");
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) < 4)
+{
+system("cls");
+puts("Введено менее 4 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) > 12)
+{
+system("cls");
+puts("Введено более 12 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+{
+break;
+}
+}
+}while(login == "" || error > 0 || error_word > 0 || strlen(name) < 4 || strlen(name) > 12);
+ 
+if(point == 0)
+{
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+do{
+error = 0;
+error_word = 0;
+point = 0;
+fflush(stdin);
+//SetColor(0,0);
+//getline(cin, password);
+//SetColor(14,0);
+ 
+password = "";
+string prepass = "";
+ 
+for(i=0;prepass[i] = getch();){
+if(isalnum(prepass[i]) != 0 || ispunct(prepass[i]) != 0){
+printf("%c", '*');
+password += prepass[i];
+i++;
+}else if (prepass[i] == 8 && i != 0) {
+printf("%s","\b \b");
+password = "";
+i--;
+for(int j = 0; j < i; j++) {
+password += prepass[j];
+}
+}else if (prepass[i] == 13) {
+break;
+}
+}
+ 
+name = password.c_str();
+printf("\n%s", name);
+ 
+if(password == "")
+{
+system("cls");
+puts("Ничего не введено");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(password == ".")
+{
+system("cls");
+point = 1;
+break;
+}
+else
+{
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] == ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+if(error > 0)
+{
+system("cls");
+puts("Вы ввели пробел. Попробуйте еще раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(error_word > 0)
+{
+system("cls");
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) < 6)
+{
+system("cls");
+puts("Введено менее 6 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) > 12)
+{
+system("cls");
+puts("Введено более 12 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+{
+break;
+}
+}
+}while(password == "" || error > 0 || error_word > 0 || strlen(name) < 6 || strlen(name) > 12);
+ 
+if(point == 0)
+{
+int t;
+ 
+for(i=0;i<50;i++)
+{
+A[i].login = "";
+A[i].name = "";
+A[i].password = "";
+}
+ 
+account = fopen("account.txt", "r");
+for(i=0;i<50;i++)
+{
+fgets(S,38,account);
+ 
+if(S != "")
+{
+for(t=0;t<12;t++)
+{
+if(S[t] != ' ' && S[t]
+!= '\n')
+{
+A[i].login += S[t];
+}
+}
+ 
+for(t=12;t<24;t++)
+{
+if(S[t] != ' ' && S[t] != '\n')
+{
+A[i].password += S[t];
+}
+}
+ 
+for(t=24;t<38;t++)
+{
+if(S[t] != ' ' && S[t] != '\n')
+{
+A[i].name += S[t];
+}
+}
+}
+}
+fclose(account);
+ 
+for(i=0;i<50;i++)
+{
+if(A[i].login == login && A[i].password == password)
+{
+sign = 1;
+ok = 1;
+index_a = i;
+login = A[i].login;
+password = A[i].password;
+name_a = A[i].name;
+break;
+}
+}
+}
+}
+ 
+if(sign == 0 && point == 0)
+{
+system("cls");
+puts("Не удалось найти аккаунт. Проверьте логин и пароль");
+printf("\n");
+}
+else
+if(sign == 1 && point == 0)
+{
+system("cls");
+printf("Добро пожаловать %s [%s]\n",A[index_a].name.c_str(), A[index_a].login.c_str());
+printf("-------------------------------------\n");
+printf("Нажмите любую клавишу для продолжения\n");
+getchar();
+ok = 1;
+}
+ 
+}while(sign == 0 && point == 0);
+break;
+ 
+case 2: system("cls");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): ");
+getchar();
+do{
+error = 0;
+error_word = 0;
+point = 0;
+fflush(stdin);
+getline(cin, name_a);
+ 
+name = name_a.c_str();
+if(name_a == "")
+{
+system("cls");
+puts("Ничего не введено");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(name_a == ".")
+{
+system("cls");
+point = 1;
+break;
+}
+else
+{
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] == ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+if(error > 0)
+{
+system("cls");
+puts("Вы ввели пробел. Попробуйте еще раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(error_word > 0)
+{
+system("cls");
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) < 4)
+{
+system("cls");
+puts("Введено менее 4 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) > 12)
+{
+system("cls");
+puts("Введено более 12 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+{
+break;
+}
+}
+}while(login == "" || error > 0 || error_word > 0 || strlen(name) < 4 || strlen(name) > 12);
+ 
+if(point == 0)
+{
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+int error_rep;
+do{
+error = 0;
+error_word = 0;
+error_rep = 0;
+point = 0;
+fflush(stdin);
+getline(cin, login);
+ 
+name = login.c_str();
+if(login == "")
+{
+system("cls");
+puts("Ничего не введено");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(login == ".")
+{
+system("cls");
+point = 1;
+break;
+}
+else
+{
+for(i=0;i<50;i++)
+{
+A[i].login = "";
+}
+ 
+account = fopen("account.txt", "r");
+for(i=0;i<50;i++)
+{
+fgets(S,38,account);
+ 
+if(S != "")
+{
+for(t=0;t<12;t++)
+{
+if(S[t] != ' ')
+{
+A[i].login += S[t];
+}
+}
+ 
+if(A[i].login == login)
+{
+error_rep++;
+}
+}
+}
+fclose(account);
+ 
+if(error_rep > 0)
+{
+system("cls");
+puts("Логин занят");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+{
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] == ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+if(error > 0)
+{
+system("cls");
+puts("Вы ввели пробел. Попробуйте еще раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(error_word > 0)
+{
+system("cls");
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) < 4)
+{
+system("cls");
+puts("Введено менее 4 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) > 12)
+{
+system("cls");
+puts("Введено более 12 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): ");
+}
+else
+{
+break;
+}
+}
+}
+}while(login == "" || error > 0 || error_word > 0 || strlen(name) < 4 || strlen(name) > 12 || error_rep > 0);
+ 
+if(point == 0)
+{
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+do{
+error = 0;
+error_word = 0;
+point = 0;
+fflush(stdin);
+//SetColor(0,0);
+getline(cin, password);
+//SetColor(14,0);
+ 
+name = password.c_str();
+ 
+if(password == "")
+{
+system("cls");
+puts("Ничего не введено");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(password == ".")
+{
+system("cls");
+point = 1;
+break;
+}
+else
+{
+for(i=0;i<strlen(name);i++)
+{
+if(name[i] == ' ')
+{
+error++;
+}
+ 
+if(name[i] == '/' || name[i] == '?' || name[i] == ',' || name[i] == '.' || name[i] == '|' || name[i] == ':' || name[i] == '<' || name[i] == '>' || name[i] == '*')
+{
+error_word++;
+}
+}
+ 
+if(error > 0)
+{
+system("cls");
+puts("Вы ввели пробел. Попробуйте еще раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(error_word > 0)
+{
+system("cls");
+puts("Введен запрещенный символ / * : ? , . < > | Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) < 6)
+{
+system("cls");
+puts("Введено менее 6 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+if(strlen(name) > 12)
+{
+system("cls");
+puts("Введено более 12 символов. Попробуйте ещё раз: ");
+printf("\n");
+printf("Введите свое имя(от 4 до 12 символов)(. - вернуться): %s\n", name_a.c_str());
+printf("Введите логин(от 4 до 12 символов)(. - вернуться): %s\n",login.c_str());
+printf("Введите пароль(от 6 до 12 символов)(. - вернуться): ");
+}
+else
+{
+break;
+}
+}
+}while(password == "" || error > 0 || error_word > 0 || strlen(name) < 6 || strlen(name) > 12);
+ 
+}
+}
+ 
+if(point == 0)
+{
+account = fopen("account.txt", "a+");
+fprintf(account,"%-12s%-12s%-12s\n",login.c_str(),password.c_str(),name_a.c_str());
+fclose(account);
+ 
+system("cls");
+printf("Зарегистрирован аккаунт %s (%s)\n",login.c_str(),name_a.c_str());
+printf("\n");
+}
+break;
+ 
+case 3: puts(" Вы вышли из программы");
+exit(0);
+break;
+ 
+default: puts(" ERROR!");
+}
+}while(ok == 0 || point == 1);
+ 
+}
+ 
+void reg(string &login, int &tick, int cluster){
+ 
+int tick_reg, tick_reg_1, i, ok, t;
+do{
+ok = 0;
+system("cls");
+printf("Текущий аккаунт: %s\n",login.c_str());
+puts(" 1) Выйти из аккаунта");
+puts(" 2) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+ 
+do{
+scanf("%d", &tick_reg);
+if(tick_reg == 0)
+{
+system("cls");
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз:\n");
+printf("Текущий аккаунт: %s\n",login.c_str());
+puts(" 1) Выйти из аккаунта");
+puts(" 2) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+else
+if(tick_reg < 0 || tick_reg > 2)
+{
+system("cls");
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз:\n");
+printf("Текущий аккаунт: %s\n",login.c_str());
+puts(" 1) Выйти из аккаунта");
+puts(" 2) Вернуться");
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+}while(tick_reg <= 0 || tick_reg > 2);
+ 
+switch(tick_reg)
+{
+case 1: system("cls");
+puts("При выходе из аккаунты будут удалены все каталоги файлы. Уверены?");
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+do{
+scanf("%d", &tick_reg_1);
+if(tick_reg_1 == 0)
+{
+system("cls");
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз:\n");
+puts("При выходе из аккаунты будут удалены все каталоги файлы. Уверены?");
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+else
+if(tick_reg < 0 || tick_reg > 2)
+{
+system("cls");
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз:\n");
+puts("При выходе из аккаунты будут удалены все каталоги файлы. Уверены?");
+puts(" 1) Да");
+puts(" 2) Нет");
+puts("------------------");
+printf("Введите номер пункта: ");
+}
+}while(tick_reg_1 <= 0 || tick_reg_1 > 2);
+ 
+switch(tick_reg_1)
+{
+case 1: for(i=0;i<cluster;i++)
+{
+if(C[i].name != "" && C[i].size != 0)
+{
+for(t=0;t<cluster;t++)
+{
+C[i].file.name[t] = "";
+C[i].file.size[t] = 0;
+C[i].file.text.text[t] = "";
+}
+}
+ 
+C[i].name = "";
+C[i].size = 0;
+C[i].size_free = 0;
+}
+ok = 1;
+system("cls");
+puts("Вы вышли из аккаунта");
+reg_pr(login);
+break;
+case 2: system("cls");
+break;
+default: puts("ERROR!");
+}
+ 
+break;
+case 2: system("cls");
+ok = 1;
+break;
+default: puts(" ERROR!");
+}
+}while(ok == 0);
+ 
+tick = 0;
+}
+ 
+int main(){ //главное меню
+ 
+setlocale(LC_ALL, "Rus");
+SetConsoleCP(1251);
+SetConsoleOutputCP(1251);
+ 
+ 
+const char *name_const;
+int volume, cluster_size = 0, index_a;
+int cluster; //количество кластеров
+float cluster_f, cluster_result;
+ 
+string login;
+ 
+int tick = 0, i;
+ 
+reg_pr(login);
+ 
+system("cls");
+ 
+printf("Введите размер виртуальной памяти (в байтах): ");
+ 
+volume = 0;
+do
+{
+scanf("%d", &volume); //проверка введенного значения
+ 
+if(volume == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(volume < 0 || volume > 10000)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+}while(volume <= 0 || volume > 10000);
+ 
+printf("Введите размер кластера (общий размер памяти: %d): ", volume);
+ 
+do
+{
+scanf("%d", &cluster_size); //проверка введенного значения
+ 
+if(cluster_size == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+if(cluster_size < 0)
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение или значение слишком большое. Попробуйте ещё раз: ");
+}
+else
+{
+cluster = volume/cluster_size; //расчет кластеров
+cluster_f = float(volume)/float(cluster_size); //float остаток
+cluster_result = cluster_f - cluster; //с остатков - без остатка
+ 
+if(cluster_result != 0)
+{
+getchar();
+puts(" ERROR! Не удалось выделить целый размер страницы (деление вещественное). Попробуйте ещё раз: ");
+}
+else
+if(cluster > 1000)
+{
+puts(" ERROR! Количество кластеров превышает 1000. Попробуйте ещё раз: ");
+}
+getchar();
+}
+}while(cluster_size <= 0 || cluster_result != 0 || cluster > 1000);
+ 
+int tmp;
+ 
+for(i=0;i<cluster;i++)
+{
+C[i].name = "";
+C[i].size = 0;
+C[i].size_free = 0;
+for(tmp=0;tmp<cluster;tmp++)
+{
+C[i].file.name[tmp] = "";
+C[i].file.size[tmp] = 0;
+C[i].file.text.text[tmp] = "";
+}
+}
+system("cls");
+printf("Общая память: %d\n", volume);
+printf("Размер кластера: %d\n", cluster_size);
+printf("Количество кластеров: %d\n", cluster);
+printf("Свободное пространство: %d (100%%)\n", volume);
+ 
+while(tick != 8){
+menu(cluster, volume, login);
+scanf("%d", &tick);
+system("cls");
+ 
+if(tick > 0 && tick <= 8)
+{
+switch(tick)
+{
+case 1: form(cluster, cluster_size, volume, tick); break;
+case 2: add(cluster, tick, cluster_size, volume); break;
+case 3: search(cluster, tick, volume); break;
+case 4: direct(cluster, tick, volume, cluster_size); break;
+case 5: delt(cluster, volume, tick, cluster_size); break;
+case 6: change(cluster, tick);break;
+case 7: reg(login, tick, cluster);break;
+case 8: puts(" Вы вышли из программы"); exit(0); break;
+default: puts(" ERROR! Введено неверное значение. Попробуйте ещё раз: "); getchar();
+}
+}
+else
+if(tick == 0)
+{
+getchar();
+puts(" ERROR! Вы ввели букву, символ или значение 0. Попробуйте ещё раз: ");
+}
+else
+{
+getchar();
+puts(" ERROR! Вы ввели отрицательное значение, букву или значение больше заданной памяти. Попробуйте ещё раз: ");
+}
+}
+}
